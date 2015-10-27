@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+myvenv
+pabrik_db_bak.sql
+db.sqlite3
+/static
+/polls
+.DS_Store

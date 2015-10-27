@@ -1,0 +1,17 @@
+<h1>U.D. CAHAYA MULIA</h1>
+<br />
+<span>No. nota: {{ penjualan.nomor_nota }}</span><br />
+<span>Tanggal: {{ penjualan.tgl_jual|date:"d F Y" }}</span><br />
+<span>Customer: {{ penjualan.customer }}</span><br />
+<br />
+<table border="1" cellpadding="3" cellspacing="0">
+<tr><th>No.</th><th>Nama produk</th><th>Harga(per item)</th><th>Jumlah</th><th>Harga total</th></tr>
+{% for detail in penjualan.penjualan_detail_set.all %}
+    <tr><td>{{ forloop.counter }}</td><td>{{ detail.produk }}</td><td>{{ detail.harga_produk }}</td><td>{{ detail.jumlah_produk }}</td><td>{{ detail.harga_total }}</td></tr>
+{% endfor %}
+<tr><td colspan="4"><b>TOTAL</b></td><td><b>{{ penjualan.harga_total }}</b></td></tr>
+</table>
+
+<br />
+<br />
+<div>Tanda tangan<br /><br /><br />...................</div>
