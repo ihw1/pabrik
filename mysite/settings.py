@@ -61,10 +61,10 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pabrik_db',
-        'USER': 'ivana',
+        'NAME': 'pabrik$pabrik_db',
+        'USER': 'pabrik',
         'PASSWORD': 'ivana001',
-        'HOST': '/tmp/mysql.sock',
+        'HOST': 'pabrik.mysql.pythonanywhere-services.com',
     
     }
 }
