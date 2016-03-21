@@ -4,10 +4,17 @@ from pabrik.models import *
 from django import forms 
 
 class Customer_Admin(admin.ModelAdmin):
-    list_display = ('nama',)
+    list_display = ('nama','telp','alamat')
     search_fields = ['nama']
 
 admin.site.register(Customer,Customer_Admin)
+
+class Supplier_Admin(admin.ModelAdmin):
+    list_display = ('nama','telp','alamat','kategori')
+    search_fields = ['nama']
+    list_filter = ['kategori']
+
+admin.site.register(Supplier,Supplier_Admin)
 
 class Bahan_baku_Admin(admin.ModelAdmin):
     list_display = ('nama','jumlah','jumlah_outsource')

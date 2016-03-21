@@ -13,13 +13,29 @@ def number():
 # Create your models here.
 class Customer(models.Model):
     nama = models.CharField(max_length=200)
-    
+    telp = models.CharField(max_length=50)
+    alamat = models.CharField(max_length=200)
+
     def __unicode__(self):  # Python 3: def __str__(self):
         return self.nama
     
     class Meta:
         verbose_name = "pelanggan"
         verbose_name_plural = "pelanggan"
+
+class Supplier(models.Model):
+    nama = models.CharField(max_length=200)
+    telp = models.CharField(max_length=50)
+    alamat = models.CharField(max_length=200)
+    kategori = models.CharField(max_length=50)
+    notes = models.TextField()
+
+    def __unicode__(self):  # Python 3: def __str__(self):
+        return self.nama
+    
+    class Meta:
+        verbose_name = "supplier"
+        verbose_name_plural = "supplier"
 
 class Bahan_baku(models.Model):
     nama = models.CharField(max_length=60)
@@ -160,7 +176,7 @@ class Outsource_detail(models.Model):
 class Pembelian(models.Model):
     nomor_nota = models.IntegerField(default=0)
     tgl_beli = models.DateField('tanggal')
-    supplier = models.CharField(max_length=60, blank=True, null=True)
+    supplier = models.ForeignKey(Supplier)
     harga_total = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     keterangan = models.TextField(blank=True, null=True)
 
