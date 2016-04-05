@@ -1,0 +1,19 @@
+<h1>U.D. CAHAYA MULIA</h1>
+<br />
+<span>No. nota: {{ nota_gabungan.nomor_nota }}</span><br />
+<span>Tgl. Nota: {{ nota_gabungan.tgl_nota|date:"d F Y" }}</span><br />
+<span>Tgl. Tagihan: {{ nota_gabungan.tgl_tagihan|date:"d F Y" }}</span><br />
+<span>Customer: {{ nota_gabungan.customer }}</span><br />
+<br />
+<table border="1" cellpadding="3" cellspacing="0">
+<tr><th>No.</th><th>No. Nota</th><th>Tanggal</th><th>Harga total</th></tr>
+{% for penjualan in nota_gabungan.penjualan_set.all %}
+    <tr><td>{{ forloop.counter }}</td><td>{{ penjualan.nomor_nota }}</td><td>{{ penjualan.tgl_jual }}</td><td>{{ penjualan.harga_total }}</td></tr>
+{% endfor %}
+<tr><td colspan="3"><b>TOTAL</b></td><td><b>{{ nota_gabungan.harga_total }}</b></td></tr>
+</table>
+<br />
+<span>Keterangan: {{ nota_gabungan.keterangan }}</span><br />
+<br />
+<br />
+<div>Tanda tangan<br /><br /><br />...................</div>

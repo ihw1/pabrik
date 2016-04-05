@@ -4,17 +4,32 @@ from django.utils import timezone
 from django.http import HttpResponse
 from decimal import Decimal
 
-def number():
+def nota_auto_no():
     if Penjualan.objects.count() == 0:
         return 1
     else:
         return Penjualan.objects.order_by('-nomor_nota')[0].nomor_nota + 1
 
+def nota_gabungan_auto_no():
+    if Nota_gabungan.objects.count() == 0:
+        return 1
+    else:
+        return Nota_gabungan.objects.order_by('-nomor_nota')[0].nomor_nota + 1
+
 # Create your models here.
 class Customer(models.Model):
     nama = models.CharField(max_length=200)
-    telp = models.CharField(max_length=50)
-    alamat = models.CharField(max_length=200)
+    telp = models.CharField(max_length=50,blank=True, null=True)
+    alamat = models.CharField(max_length=200,blank=True, null=True)
+    MINGGUAN = '1M'
+    BULANAN = '1B'
+    JANGKA_KREDIT = (
+        (MINGGUAN, 'Mingguan'),
+        (BULANAN, 'Bulanan'),
+    )
+    jangka_waktu_kredit = models.CharField(max_length=2,
+                                      choices=JANGKA_KREDIT,
+                                      default=BULANAN)
 
     def __unicode__(self):  # Python 3: def __str__(self):
         return self.nama
@@ -25,10 +40,11 @@ class Customer(models.Model):
 
 class Supplier(models.Model):
     nama = models.CharField(max_length=200)
-    telp = models.CharField(max_length=50)
-    alamat = models.CharField(max_length=200)
-    kategori = models.CharField(max_length=50)
-    notes = models.TextField()
+    telp = models.CharField(max_length=50,blank=True, null=True)
+    alamat = models.CharField(max_length=200,blank=True, null=True)
+    contact_person = models.CharField(max_length=100,blank=True, null=True)
+    kategori = models.CharField(max_length=50,blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
 
     def __unicode__(self):  # Python 3: def __str__(self):
         return self.nama
@@ -120,6 +136,10 @@ class Produk_harga_special(models.Model):
     def __unicode__(self):  # Python 3: def __str__(self):
         return ''
 
+    class Meta:
+        verbose_name = "harga spesial"
+        verbose_name_plural = "harga spesial"
+
 class Bahan_baku_produk(models.Model):
     produk = models.ForeignKey(Produk)
     bahan_baku = models.ForeignKey(Bahan_baku)
@@ -127,6 +147,10 @@ class Bahan_baku_produk(models.Model):
     
     def __unicode__(self):  # Python 3: def __str__(self):
         return ''
+
+    class Meta:
+        verbose_name = "bahan baku"
+        verbose_name_plural = "bahan baku"
 
 class Outsource(models.Model):
     tgl_outsource = models.DateField('tanggal')
@@ -172,6 +196,10 @@ class Outsource_detail(models.Model):
         orig = Outsource_detail.objects.get(pk=self.pk)
         orig.undo_outsource_bahan_baku(orig.jumlah_outsource)
         super(Outsource_detail, self).delete(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "rincian"
+        verbose_name_plural = "rincian"
 
 class Pembelian(models.Model):
     nomor_nota = models.IntegerField(default=0)
@@ -223,8 +251,56 @@ class Pembelian_detail(models.Model):
         orig.minus_bahan_baku(orig.jumlah_beli)
         super(Pembelian_detail, self).delete(*args, **kwargs)
 
+    class Meta:
+        verbose_name = "rincian"
+        verbose_name_plural = "rincian"
+
+class Nota_gabungan(models.Model):
+    nomor_nota = models.IntegerField(default=nota_gabungan_auto_no, unique=True)
+    tgl_nota = models.DateField('tgl nota', auto_now_add = True, blank=True, null=True)
+    tgl_tagihan = models.DateField('tgl tagihan', blank=True, null=True)
+    customer = models.ForeignKey(Customer)
+    harga_total = models.DecimalField(default=0,max_digits=20, decimal_places=2)
+    keterangan = models.TextField(blank=True, null=True)
+
+    @classmethod
+    def create(cls, customer):
+        nota_gabungan = cls(customer = customer)
+        if customer.jangka_waktu_kredit == Customer.MINGGUAN:
+            nota_gabungan.tgl_tagihan = datetime.datetime.now()+datetime.timedelta(days=7)
+        elif customer.jangka_waktu_kredit == Customer.BULANAN:
+            nota_gabungan.tgl_tagihan = datetime.datetime.now()+datetime.timedelta(weeks=4)
+        
+        return nota_gabungan
+
+    def lunas(self):
+        bayar = 0
+        for pembayaran in self.pembayaran_set.all():
+            bayar += pembayaran.jumlah_bayar
+        return (bayar >= self.harga_total)
+    lunas.admin_order_field = ''
+    lunas.boolean = True
+    lunas.short_description = 'Lunas?'
+
+    def hitung_harga_total(self):
+        total = 0
+        for detail in self.penjualan_set.all():
+            total += detail.harga_total
+        return total
+    
+    def save(self, *args, **kwargs):
+        self.harga_total = self.hitung_harga_total()
+        super(Nota_gabungan, self).save(*args, **kwargs)
+
+    def __unicode__(self):  # Python 3: def __str__(self):
+        return str(self.nomor_nota)
+
+    class Meta:
+        verbose_name_plural = "Nota Gabungan"
+
 class Penjualan(models.Model):
-    nomor_nota = models.IntegerField(default=number, unique=True)
+    nota_gabungan = models.ForeignKey(Nota_gabungan, blank=True, null=True)
+    nomor_nota = models.IntegerField(default=nota_auto_no, unique=True)
     tgl_jual = models.DateField('tanggal')
     customer = models.ForeignKey(Customer)
     harga_total = models.DecimalField(default=0,max_digits=20, decimal_places=2)
@@ -240,14 +316,14 @@ class Penjualan(models.Model):
         self.terkirim = True
         self.save()
     
-    def lunas(self):
-        bayar = 0
-        for pembayaran in self.penjualan_pembayaran_set.all():
-            bayar += pembayaran.jumlah_bayar
-        return (bayar >= self.harga_total)
-    lunas.admin_order_field = ''
-    lunas.boolean = True
-    lunas.short_description = 'Lunas?'
+    # def lunas(self):
+    #     bayar = 0
+    #     for pembayaran in self.penjualan_pembayaran_set.all():
+    #         bayar += pembayaran.jumlah_bayar
+    #     return (bayar >= self.harga_total)
+    # lunas.admin_order_field = ''
+    # lunas.boolean = True
+    # lunas.short_description = 'Lunas?'
 
     def hitung_harga_total(self):
         total = 0
@@ -263,6 +339,9 @@ class Penjualan(models.Model):
         for detail in self.penjualan_detail_set.all():
             detail.delete()
         super(Penjualan, self).delete(*args, **kwargs)
+
+    def __unicode__(self):  # Python 3: def __str__(self):
+        return ''
 
     class Meta:
         verbose_name_plural = "penjualan"
@@ -302,13 +381,20 @@ class Penjualan_detail(models.Model):
 
         super(Penjualan_detail, self).delete(*args, **kwargs)
 
-class Penjualan_pembayaran(models.Model):
-    penjualan = models.ForeignKey(Penjualan)
+    class Meta:
+        verbose_name = "rincian"
+        verbose_name_plural = "rincian"
+
+class Pembayaran(models.Model):
+    nota_gabungan = models.ForeignKey(Nota_gabungan)
     tgl_bayar = models.DateField('tanggal')
     jumlah_bayar = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     
     def __unicode__(self):  # Python 3: def __str__(self):
         return ''
+
+    class Meta:
+        verbose_name_plural = "pembayaran"
 
 class Penyusutan(models.Model):
     tgl_penyusutan = models.DateField('tanggal')
@@ -354,3 +440,7 @@ class Penyusutan(models.Model):
         orig = Penyusutan.objects.get(pk=self.pk)
         orig.undo_set_jumlah_bahan_setelah_susut()
         super(Penyusutan, self).delete(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "penyusutan"
+        verbose_name_plural = "penyusutan"

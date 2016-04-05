@@ -12,3 +12,10 @@ def nota(request, penjualan_id):
     except Penjualan.DoesNotExist:
         raise Http404
     return render(request, 'pabrik/nota.html', {'penjualan': penjualan})
+
+def nota_gabungan(request, nota_gabungan_id):
+    try:
+        nota_gabungan = Nota_gabungan.objects.get(pk=nota_gabungan_id)
+    except Nota_gabungan.DoesNotExist:
+        raise Http404
+    return render(request, 'pabrik/nota_gabungan.html', {'nota_gabungan': nota_gabungan})
