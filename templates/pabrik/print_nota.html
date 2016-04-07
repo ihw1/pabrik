@@ -1,3 +1,4 @@
+{% for nota_gabungan in nota_gabungan_list %}
 <h2>MEMO</h2>
 <table border="0" cellpadding="3">
 <tr>
@@ -5,14 +6,14 @@
 <td style="text-align:right">Customer: {{ nota_gabungan.customer }}</td>
 </tr>
 <tr>
-<td>Tgl. Memo: {{ nota_gabungan.tgl_nota|date:"d M y" }}</td><td style="width:20px"></td>
+<td>Tgl. Memo: {{ nota_gabungan.tgl_nota|date:"d M y" }}</td><td style="width:80px"></td>
 <td style="text-align:right">Tgl. Tagihan: {{ nota_gabungan.tgl_tagihan|date:"d M y" }}</td>
 </tr>
 </table>
 <table border="1" cellpadding="5" cellspacing="0">
-<tr><!--<th>No.</th>--><th>Tanggal</th><th>No. Nota</th><th>Jumlah (Rp.)</th><th>No. Surat Jalan</th></tr>
+<tr><!--<th>No.</th>--><th>No. Nota</th><th>Tanggal</th><th>Jumlah (Rp.)</th><th>No. Surat Jalan</th></tr>
 {% for penjualan in nota_gabungan.penjualan_set.all %}
-    <tr><!--<td>{{ forloop.counter }}</td>--><td>{{ penjualan.tgl_jual }}</td><td>{{ penjualan.nomor_nota }}</td><td style="text-align:right">{{ penjualan.harga_total }}</td><td>{% if penjualan.nomor_surat_jalan %}{{ penjualan.nomor_surat_jalan }}{% endif %}</td></tr>
+    <tr><!--<td>{{ forloop.counter }}</td>--><td>{{ penjualan.nomor_nota }}</td><td>{{ penjualan.tgl_jual }}</td><td style="text-align:right">{{ penjualan.harga_total }}</td><td>{% if penjualan.nomor_surat_jalan %}{{ penjualan.nomor_surat_jalan }}{% endif %}</td></tr>
 {% endfor %}
 <tr><td colspan="2"><b>TOTAL</b></td><td  style="text-align:right"><b>{{ nota_gabungan.harga_total }}</b></td></tr>
 </table>
@@ -22,3 +23,4 @@
 {% endif %}
 <br />
 <div>Hormat kami<br /><br /><br />...................</div>
+{% endfor %}

@@ -56,7 +56,7 @@ class Supplier(models.Model):
 class Bahan_baku(models.Model):
     nama = models.CharField(max_length=60)
     jumlah = models.DecimalField(default=0, max_digits=20, decimal_places=2)
-    jumlah_outsource = models.DecimalField('Jmlh di Mi An', default=0, max_digits=20, decimal_places=2)
+    jumlah_outsource = models.DecimalField('Jmlh outsource', default=0, max_digits=20, decimal_places=2)
     keterangan = models.TextField(blank=True, null=True)
 
     def __unicode__(self):  # Python 3: def __str__(self):
@@ -162,8 +162,8 @@ class Outsource(models.Model):
         super(Outsource, self).delete(*args, **kwargs)
 
     class Meta:
-        verbose_name = "Kiriman ke Mi An"
-        verbose_name_plural = "Kiriman ke Mi An"
+        verbose_name = "Outsource"
+        verbose_name_plural = "Outsource"
 
 class Outsource_detail(models.Model):
     outsource = models.ForeignKey(Outsource)
@@ -219,7 +219,7 @@ class Pembelian(models.Model):
 class Pembelian_detail(models.Model):
     pembelian = models.ForeignKey(Pembelian)
     bahan_baku = models.ForeignKey(Bahan_baku)
-    jumlah_beli = models.DecimalField(default=0, max_digits=20, decimal_places=2)
+    jumlah_beli = models.DecimalField('banyak', default=0, max_digits=20, decimal_places=2)
     harga_bahan = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     
     def __unicode__(self):  # Python 3: def __str__(self):
@@ -256,8 +256,8 @@ class Pembelian_detail(models.Model):
         verbose_name_plural = "rincian"
 
 class Nota_gabungan(models.Model):
-    nomor_nota = models.IntegerField(default=nota_gabungan_auto_no, unique=True)
-    tgl_nota = models.DateField('tgl nota', auto_now_add = True, blank=True, null=True)
+    nomor_nota = models.IntegerField('nomor memo', default=nota_gabungan_auto_no, unique=True)
+    tgl_nota = models.DateField('tgl memo', auto_now_add = True, blank=True, null=True)
     tgl_tagihan = models.DateField('tgl tagihan', blank=True, null=True)
     customer = models.ForeignKey(Customer)
     harga_total = models.DecimalField(default=0,max_digits=20, decimal_places=2)
@@ -296,7 +296,8 @@ class Nota_gabungan(models.Model):
         return str(self.nomor_nota)
 
     class Meta:
-        verbose_name_plural = "Nota Gabungan"
+        verbose_name = "Nota gabungan"
+        verbose_name_plural = "Nota gabungan"
 
 class Penjualan(models.Model):
     nota_gabungan = models.ForeignKey(Nota_gabungan, blank=True, null=True)
@@ -304,17 +305,17 @@ class Penjualan(models.Model):
     tgl_jual = models.DateField('tanggal')
     customer = models.ForeignKey(Customer)
     harga_total = models.DecimalField(default=0,max_digits=20, decimal_places=2)
-    terkirim = models.BooleanField(default=False)
+    nomor_surat_jalan = models.IntegerField(blank=True, null=True, unique=True)
     keterangan = models.TextField(blank=True, null=True)
 
-    def kirim(self):
-        if self.terkirim:
-            return
-        for detail in self.penjualan_detail_set.all():
-            detail.produk.jumlah -= detail.jumlah_produk
-            detail.produk.save()
-        self.terkirim = True
-        self.save()
+    # def kirim(self):
+    #     if self.terkirim:
+    #         return
+    #     for detail in self.penjualan_detail_set.all():
+    #         detail.produk.jumlah -= detail.jumlah_produk
+    #         detail.produk.save()
+    #     self.terkirim = True
+    #     self.save()
     
     # def lunas(self):
     #     bayar = 0
@@ -349,7 +350,7 @@ class Penjualan(models.Model):
 class Penjualan_detail(models.Model):
     penjualan = models.ForeignKey(Penjualan)
     produk = models.ForeignKey(Produk)
-    jumlah_produk = models.DecimalField(default=0, max_digits=20, decimal_places=2)
+    jumlah_produk = models.DecimalField('banyak', default=0, max_digits=20, decimal_places=2)
     harga_produk = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     
     def __unicode__(self):  # Python 3: def __str__(self):
@@ -366,7 +367,7 @@ class Penjualan_detail(models.Model):
         return harga_special.harga
     
     def save(self, *args, **kwargs):
-        if (self.penjualan.terkirim):
+        if (self.penjualan.nomor_surat_jalan is not None and self.penjualan.nomor_surat_jalan > 0):
             return
                     
         self.harga_produk = self.hitung_harga()
@@ -376,7 +377,7 @@ class Penjualan_detail(models.Model):
         self.penjualan.save()
             
     def delete(self, *args, **kwargs):
-        if (self.penjualan.terkirim):
+        if (self.penjualan.nomor_surat_jalan is not None and self.penjualan.nomor_surat_jalan > 0):
             return
 
         super(Penjualan_detail, self).delete(*args, **kwargs)

@@ -3,7 +3,25 @@ from django.http import HttpResponseRedirect
 from pabrik.models import *
 from django import forms 
 from django.contrib import messages
+# import cStringIO as StringIO
+# from xhtml2pdf import pisa
+# from django.template.loader import get_template
+# from django.template import Context
+# from django.http import HttpResponse
+# from cgi import escape
 
+
+# def render_to_pdf(template_src, context_dict):
+#     template = get_template(template_src)
+#     context = Context(context_dict)
+#     html  = template.render(context)
+#     result = StringIO.StringIO()
+
+#     pdf = pisa.pisaDocument(StringIO.StringIO(html.encode("ISO-8859-1")), result)
+#     if not pdf.err:
+#         return HttpResponse(result.getvalue(), content_type='application/pdf')
+
+#     return HttpResponse('We had some errors<pre>%s</pre>' % escape(html))
 class Customer_Admin(admin.ModelAdmin):
     list_display = ('nama','telp','alamat')
     search_fields = ['nama']
@@ -93,7 +111,7 @@ class Penjualan_detail_Inline(admin.TabularInline):
     
     def get_readonly_fields(self, request, obj=None):
         if isinstance(obj,Penjualan):
-            if obj.terkirim:
+            if (obj.nomor_surat_jalan is not None and obj.nomor_surat_jalan > 0):
                 return ['produk','jumlah_produk']
         return []
 
@@ -103,10 +121,10 @@ class Pembayaran_Inline(admin.TabularInline):
 
 class Penjualan_Admin(admin.ModelAdmin):
     inlines = [Penjualan_detail_Inline]
-    fields = ['nomor_nota','tgl_jual','customer', 'nota_gabungan']
-    list_display = ('nomor_nota','tgl_jual','customer','harga_total','nota_gabungan','terkirim')
+    fields = ['nomor_nota','tgl_jual','customer', 'nomor_surat_jalan', 'nota_gabungan']
+    list_display = ('nomor_nota','tgl_jual','customer','harga_total','nota_gabungan','nomor_surat_jalan')
     search_fields = ['nomor_nota','customer__nama']
-    actions = ['terkirim', 'gabung_nota']
+    actions = ['gabung_nota']
     readonly_fields = []
     list_filter = ['customer']
     
@@ -120,6 +138,10 @@ class Penjualan_Admin(admin.ModelAdmin):
                 if o.customer != customer:
                     valid = False
                     messages.error(request, "Customer yang dipilih harus sama.")
+                    
+            if (o.nomor_surat_jalan is None or o.nomor_surat_jalan <= 0):
+                valid = False
+                messages.error(request, "Nota " + str(o.nomor_nota) + " belum memiliki surat jalan.")
 
         if valid:
             nota_gabungan = Nota_gabungan.create(customer)
@@ -129,14 +151,14 @@ class Penjualan_Admin(admin.ModelAdmin):
                 o.save()
             nota_gabungan.save()
 
-        return HttpResponseRedirect("/admin/pabrik/nota_gabungan/"+str(nota_gabungan.pk)+"/")
+            return HttpResponseRedirect("/admin/pabrik/nota_gabungan/"+str(nota_gabungan.pk)+"/")
 
     gabung_nota.short_description = 'Buat nota gabungan untuk penjualan yang dipilih'
     
-    def terkirim(self, request, obj):
-        for o in obj.all():
-            o.kirim()
-    terkirim.short_description = 'Tandai terkirim untuk penjualan yang dipilih'
+    # def terkirim(self, request, obj):
+    #     for o in obj.all():
+    #         o.kirim()
+    # terkirim.short_description = 'Tandai terkirim untuk penjualan yang dipilih'
 
     def get_actions(self, request):
         actions = super(Penjualan_Admin, self).get_actions(request)
@@ -151,7 +173,7 @@ class Penjualan_Admin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if isinstance(obj,Penjualan):
-            if obj.terkirim:
+            if (obj.nomor_surat_jalan is not None and obj.nomor_surat_jalan > 0):
                 return ['nomor_nota','tgl_jual','customer']
         return []
 
@@ -159,11 +181,11 @@ admin.site.register(Penjualan, Penjualan_Admin)
 
 class Penjualan_Inline(admin.TabularInline):
     model = Penjualan
-    fields = ['nomor_nota','tgl_jual','harga_total', ]
+    fields = ['nomor_nota','tgl_jual','harga_total', 'nomor_surat_jalan']
     extra = 0
     show_change_link = True
     can_delete = False
-    readonly_fields = ('nomor_nota','tgl_jual','harga_total',)
+    readonly_fields = ('nomor_nota','tgl_jual','harga_total','nomor_surat_jalan')
 
 class Nota_gabungan_Admin(admin.ModelAdmin):
     inlines = [Penjualan_Inline, Pembayaran_Inline]
@@ -172,6 +194,7 @@ class Nota_gabungan_Admin(admin.ModelAdmin):
     search_fields = ['nomor_nota','customer__nama']
     readonly_fields = []
     list_filter = ['customer', 'tgl_tagihan']
+    actions = ['download', ]
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -186,6 +209,26 @@ class Nota_gabungan_Admin(admin.ModelAdmin):
         if isinstance(obj,Nota_gabungan):
             return ['nomor_nota', 'tgl_nota','customer', 'harga_total']
         return []
+    
+    def download(self, request, obj):
+        id_list = ""
+        for o in obj:
+            id_list += str(o.pk) + "A"
+        id_list = id_list[:len(id_list)-1]
+        return HttpResponseRedirect("/pabrik/"+id_list+"/print_nota/")
+# render_to_pdf(
+#             'print_nota.html',
+#             {
+#                 'pagesize':'A4',
+#                 'mylist': obj.all(),
+#             }
+#         )
+    download.short_description = 'Print nota gabungan yang dipilih'
+
+    def get_actions(self, request):
+        actions = super(Nota_gabungan_Admin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
 
 admin.site.register(Nota_gabungan, Nota_gabungan_Admin)
 class CustomBahanBakuModelChoiceField(forms.ModelChoiceField):
