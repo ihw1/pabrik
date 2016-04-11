@@ -52,7 +52,7 @@ class Bahan_baku_produk_Inline(admin.TabularInline):
 
 class Produk_Admin(admin.ModelAdmin):
     inlines = [Bahan_baku_produk_Inline,Produk_harga_special_Inline]
-    list_display = ('nama','jumlah',)
+    list_display = ('nama','jumlah','harga','harga_partai')
     search_fields = ['nama']
     readonly_fields = ['jumlah']
 
@@ -105,7 +105,7 @@ admin.site.register(Pembelian, Pembelian_Admin)
 
 class Penjualan_detail_Inline(admin.TabularInline):
     model = Penjualan_detail
-    fields = ['produk','jumlah_produk']
+    fields = ['produk','jumlah_produk','diskon']
     extra = 3
     readonly_fields = []
     
@@ -233,7 +233,7 @@ class Nota_gabungan_Admin(admin.ModelAdmin):
 admin.site.register(Nota_gabungan, Nota_gabungan_Admin)
 class CustomBahanBakuModelChoiceField(forms.ModelChoiceField):
      def label_from_instance(self, obj):
-             return "%s - Jumlah: %s; Jumlah di Mi An: %s" % (obj.nama, obj.jumlah, obj.jumlah_outsource)
+             return "%s - Jumlah: %s; Jumlah di Outsource: %s" % (obj.nama, obj.jumlah, obj.jumlah_outsource)
 
 class PenyusutanAdminForm(forms.ModelForm):
     bahan_baku = CustomBahanBakuModelChoiceField(queryset=Bahan_baku.objects.all()) 

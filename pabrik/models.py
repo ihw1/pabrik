@@ -1,7 +1,5 @@
 from django.db import models
 import datetime
-from django.utils import timezone
-from django.http import HttpResponse
 from decimal import Decimal
 
 def nota_auto_no():
@@ -69,7 +67,8 @@ class Bahan_baku(models.Model):
 class Produk(models.Model):
     nama = models.CharField(max_length=60)
     jumlah = models.DecimalField(default=0, max_digits=20, decimal_places=2)
-    harga = models.DecimalField(default=0, max_digits=20, decimal_places=2)
+    harga = models.DecimalField('harga ecer', default=0, max_digits=20, decimal_places=2)
+    harga_partai = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     keterangan = models.TextField(blank=True, null=True)
 
     def __unicode__(self):  # Python 3: def __str__(self):
@@ -80,7 +79,7 @@ class Produk(models.Model):
 
 class Produk_produksi(models.Model):
     produk = models.ForeignKey(Produk)
-    dari_outsource = models.BooleanField('Dari Mi An', default=False)
+    dari_outsource = models.BooleanField('Dari Outsource', default=False)
     tgl_produksi = models.DateField('tgl produksi')
     jumlah = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     keterangan = models.TextField(blank=True, null=True)
@@ -352,6 +351,7 @@ class Penjualan_detail(models.Model):
     produk = models.ForeignKey(Produk)
     jumlah_produk = models.DecimalField('banyak', default=0, max_digits=20, decimal_places=2)
     harga_produk = models.DecimalField(default=0, max_digits=20, decimal_places=2)
+    diskon = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     
     def __unicode__(self):  # Python 3: def __str__(self):
         return ''
@@ -363,8 +363,8 @@ class Penjualan_detail(models.Model):
         try:
             harga_special = self.produk.produk_harga_special_set.get(customer = self.penjualan.customer)
         except Produk_harga_special.DoesNotExist:
-            return self.produk.harga
-        return harga_special.harga
+            return self.produk.harga - self.diskon
+        return harga_special.harga - self.diskon
     
     def save(self, *args, **kwargs):
         if (self.penjualan.nomor_surat_jalan is not None and self.penjualan.nomor_surat_jalan > 0):
@@ -399,7 +399,7 @@ class Pembayaran(models.Model):
 
 class Penyusutan(models.Model):
     tgl_penyusutan = models.DateField('tanggal')
-    di_outsource = models.BooleanField('Di Mi An', default=False)
+    di_outsource = models.BooleanField('Di Outsource', default=False)
     bahan_baku = models.ForeignKey(Bahan_baku)
     sisa_di_gudang = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     jumlah_susut = models.DecimalField(default=0, max_digits=20, decimal_places=2)
