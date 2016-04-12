@@ -28,6 +28,7 @@ class Customer(models.Model):
     jangka_waktu_kredit = models.CharField(max_length=2,
                                       choices=JANGKA_KREDIT,
                                       default=BULANAN)
+    diskon_persen = models.IntegerField(default=0)
 
     def __unicode__(self):  # Python 3: def __str__(self):
         return self.nama
@@ -331,7 +332,7 @@ class Penjualan(models.Model):
         total = 0
         for detail in self.penjualan_detail_set.all():
             total += (detail.harga_total())
-        return total
+        return total * (100 - self.customer.diskon_persen) / 100
     
     def save(self, *args, **kwargs):
         self.harga_total = self.hitung_harga_total()
