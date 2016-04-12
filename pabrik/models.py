@@ -69,6 +69,8 @@ class Produk(models.Model):
     jumlah = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     harga = models.DecimalField('harga ecer', default=0, max_digits=20, decimal_places=2)
     harga_partai = models.DecimalField(default=0, max_digits=20, decimal_places=2)
+    isi_box = models.IntegerField(default=0)
+    satuan_partai = models.CharField(default='BOX',max_length=10)
     keterangan = models.TextField(blank=True, null=True)
 
     def __unicode__(self):  # Python 3: def __str__(self):
@@ -328,7 +330,7 @@ class Penjualan(models.Model):
     def hitung_harga_total(self):
         total = 0
         for detail in self.penjualan_detail_set.all():
-            total += (detail.hitung_harga() * detail.jumlah_produk)
+            total += (detail.harga_total())
         return total
     
     def save(self, *args, **kwargs):
@@ -350,6 +352,15 @@ class Penjualan_detail(models.Model):
     penjualan = models.ForeignKey(Penjualan)
     produk = models.ForeignKey(Produk)
     jumlah_produk = models.DecimalField('banyak', default=0, max_digits=20, decimal_places=2)
+    PIECES = 'PCS'
+    BOX = 'BOX'
+    SATUAN = (
+        (PIECES, PIECES),
+        (BOX, BOX),
+    )
+    unit = models.CharField(max_length=3,
+                                      choices=SATUAN,
+                                      default=PIECES)
     harga_produk = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     diskon = models.DecimalField(default=0, max_digits=20, decimal_places=2)
     
@@ -357,7 +368,10 @@ class Penjualan_detail(models.Model):
         return ''
 
     def harga_total(self):
-        return (self.jumlah_produk * self.harga_produk).quantize(Decimal('.01'))
+        jumlah = self.jumlah_produk
+        if self.unit == Penjualan_detail.BOX:
+            jumlah = self.jumlah_produk * self.produk.isi_box
+        return (jumlah * self.harga_produk).quantize(Decimal('.01'))
     
     def hitung_harga(self):
         try:

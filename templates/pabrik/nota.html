@@ -10,7 +10,8 @@
 <table border="1" cellpadding="3" cellspacing="0">
 <tr><!--<th>No.</th>--><th>Banyak</th><th>Nama barang</th><th>Harga</th><th>Jumlah</th></tr>
 {% for detail in penjualan.penjualan_detail_set.all %}
-    <tr><!--<td>{{ forloop.counter }}</td>--><td>{{ detail.jumlah_produk }}</td><td>{{ detail.produk }}</td><td>{{ detail.harga_produk }}</td><td>{{ detail.harga_total }}</td></tr>
+    <tr><!--<td>{{ forloop.counter }}</td>--><td>{{ detail.jumlah_produk }} 
+    	{% if detail.unit == 'BOX' %}{{ detail.produk.satuan_partai }} x {{ detail.produk.isi_box }}{% endif %}</td><td>{{ detail.produk }}</td><td>{{ detail.harga_produk }}</td><td>{{ detail.harga_total }}</td></tr>
 {% endfor %}
 <tr><td colspan="3"><b>TOTAL</b></td><td><b>{{ penjualan.harga_total }}</b></td></tr>
 </table>

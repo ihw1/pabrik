@@ -105,15 +105,16 @@ admin.site.register(Pembelian, Pembelian_Admin)
 
 class Penjualan_detail_Inline(admin.TabularInline):
     model = Penjualan_detail
-    fields = ['produk','jumlah_produk','diskon']
+    fields = ['produk','jumlah_produk','unit','harga_produk','diskon']
     extra = 3
-    readonly_fields = []
     
     def get_readonly_fields(self, request, obj=None):
         if isinstance(obj,Penjualan):
             if (obj.nomor_surat_jalan is not None and obj.nomor_surat_jalan > 0):
-                return ['produk','jumlah_produk']
-        return []
+                return ['produk','jumlah_produk','unit','harga_produk','diskon']
+            else:
+                return ['harga_produk']
+        return ['harga_produk']
 
 class Pembayaran_Inline(admin.TabularInline):
     model = Pembayaran
