@@ -306,6 +306,7 @@ class Penjualan(models.Model):
     nomor_nota = models.IntegerField(default=nota_auto_no, unique=True)
     tgl_jual = models.DateField('tanggal')
     customer = models.ForeignKey(Customer)
+    diskon_persen_berlaku = models.BooleanField('diskon toko (bila ada)', default=True)
     harga_total = models.DecimalField(default=0,max_digits=20, decimal_places=2)
     nomor_surat_jalan = models.IntegerField(blank=True, null=True, unique=True)
     keterangan = models.TextField(blank=True, null=True)
@@ -332,8 +333,12 @@ class Penjualan(models.Model):
         total = 0
         for detail in self.penjualan_detail_set.all():
             total += (detail.harga_total())
-        return total * (100 - self.customer.diskon_persen) / 100
-    
+        
+        if self.diskon_persen_berlaku:
+            return total * (100 - self.customer.diskon_persen) / 100
+        else:
+            return total
+            
     def save(self, *args, **kwargs):
         self.harga_total = self.hitung_harga_total()
         super(Penjualan, self).save(*args, **kwargs)
